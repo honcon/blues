@@ -1,13 +1,30 @@
 
 #include <getopt.h>
 #include <sys/stat.h>
+#include <libgen.h>
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
 #include "sys.h"
 #include "mixer.h"
 #include "util.h"
 
 struct options_t g_options;
 
-static const char *DEFAULT_DATA_PATH = ".";
+// Get the directory where the executable is located
+static char *get_exe_dir() {
+#ifdef __APPLE__
+	static char path[1024];
+	uint32_t size = sizeof(path);
+	if (_NSGetExecutablePath(path, &size) == 0) {
+		// dirname modifies the string, so we need a copy
+		char *dir = dirname(path);
+		return strdup(dir);
+	}
+#endif
+	// Fallback to current directory
+	return strdup(".");
+}
 
 static const int DEFAULT_SCALE_FACTOR = 2;
 
@@ -53,7 +70,8 @@ static struct game_t *detect_game(const char *data_path) {
 }
 
 int main(int argc, char *argv[]) {
-	const char *data_path = DEFAULT_DATA_PATH;
+	char *default_path = get_exe_dir();
+	const char *data_path = default_path;
 	int scale_factor = DEFAULT_SCALE_FACTOR;
 	const char *scale_filter = DEFAULT_SCALE_FILTER;
 	bool fullscreen = false;
@@ -166,9 +184,10 @@ int main(int argc, char *argv[]) {
 		game->res_fini();
 		g_sys.fini();
 	}
-	if (data_path != DEFAULT_DATA_PATH) {
+	if (data_path != default_path) {
 		free((char *)data_path);
 	}
+	free(default_path);
 	if (scale_filter != DEFAULT_SCALE_FILTER) {
 		free((char *)scale_filter);
 	}

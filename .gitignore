@@ -1,0 +1,38 @@
+# Build output
+blues
+*.o
+*.d
+
+# Game object files
+game_bb.o
+game_ja.o
+game_p2.o
+
+# macOS
+.DS_Store
+*.dSYM/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Game data files (not part of source)
+*.BIN
+*.CK1
+*.CK2
+*.SQL
+*.SQV
+*.SQZ
+*.EAT
+*.MOD
+*.TRK
+*.COM
+*.DOC
+
+# Archives
+*.zip
+*.tar.gz
+*.rar

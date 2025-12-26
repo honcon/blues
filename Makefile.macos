@@ -1,0 +1,47 @@
+
+SDL_CFLAGS := `sdl2-config --cflags`
+SDL_LIBS   := `sdl2-config --libs`
+
+MODPLUG_CFLAGS ?= -I/opt/homebrew/opt/libmodplug/include
+MODPLUG_LIBS ?= -L/opt/homebrew/opt/libmodplug/lib -lmodplug
+
+BB := decode.c game.c level.c objects.c resource.c screen.c sound.c staticres.c tiles.c unpack.c
+JA := game.c level.c resource.c screen.c sound.c staticres.c unpack.c
+P2 := bosses.c game.c level.c monsters.c resource.c screen.c sound.c staticres.c unpack.c
+
+BB_SRCS := $(foreach f,$(BB),bb/$f)
+JA_SRCS := $(foreach f,$(JA),ja/$f)
+P2_SRCS := $(foreach f,$(P2),p2/$f)
+SRCS := $(BB_SRCS) $(JA_SRCS) $(P2_SRCS)
+OBJS := $(SRCS:.c=.o)
+DEPS := $(SRCS:.c=.d)
+
+CPPFLAGS += -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Wpedantic -MMD $(SDL_CFLAGS) $(MODPLUG_CFLAGS) -I. -g
+
+all: blues
+
+# Build as static libraries to avoid duplicate symbol conflicts
+# Each game has its own namespace via the library
+game_bb.o: CPPFLAGS += -fvisibility=hidden
+
+game_bb.o: $(BB_SRCS:.c=.o)
+	ld -r -o $@ $^
+
+game_ja.o: CPPFLAGS += -fvisibility=hidden
+
+game_ja.o: $(JA_SRCS:.c=.o)
+	ld -r -o $@ $^
+
+game_p2.o: CPPFLAGS += -fvisibility=hidden
+
+game_p2.o: $(P2_SRCS:.c=.o)
+	ld -r -o $@ $^
+
+# Use -Wl,-force_load to avoid stripping needed symbols, and allow duplicates
+blues: main.o mixer.o sys_sdl2.o util.o game_bb.o game_ja.o game_p2.o
+	$(CC) $(LDFLAGS) -Wl,-all_load -o $@ $^ $(SDL_LIBS) $(MODPLUG_LIBS)
+
+clean:
+	rm -f $(OBJS) $(DEPS) *.o *.d blues
+
+-include $(DEPS)
